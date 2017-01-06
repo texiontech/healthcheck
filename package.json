@@ -4,6 +4,7 @@
   "description": "Health check of edge node",
   "main": "server.js",
   "dependencies": {
+    "express": "^4.14.0",
     "influx": "^5.0.0-alpha.4"
   },
   "devDependencies": {},
