@@ -1,0 +1,162 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "0.0.0",
+        "title": "Edge Healt checker"
+    },
+    "paths": {
+        "/healthcheck/check": {
+            "post": {
+                "description": "Gets `Data` objects.\nOptional query param of **size** determines\nsize of returned array\n",
+                "operationId": "healthcheckCheckPOST",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "schema": {
+                            "type": "array",
+                            "title": "ArrayOfDatas",
+                            "items": {
+                                "$ref": "#/definitions/Data"
+                            }
+                        }
+                    }
+                },
+                "x-swagger-router-controller": "Default"
+            }
+        }
+    },
+    "definitions": {
+        "Cpu": {
+            "properties": {
+                "idle": {
+                    "type": "string"
+                },
+                "iowait": {
+                    "type": "string"
+                },
+                "nice": {
+                    "type": "string"
+                },
+                "steal": {
+                    "type": "string"
+                },
+                "system": {
+                    "type": "string"
+                },
+                "user": {
+                    "type": "string"
+                }
+            }
+        },
+        "DiskIO": {
+            "properties": {
+                "device": {
+                    "type": "string"
+                },
+                "read": {
+                    "type": "string"
+                },
+                "until": {
+                    "type": "string"
+                },
+                "write": {
+                    "type": "string"
+                }
+            }
+        },
+        "DiskUsage": {
+            "properties": {
+                "path": {
+                    "type": "string"
+                },
+                "usage": {
+                    "type": "string"
+                }
+            }
+        },
+        "Memory": {
+            "properties": {
+                "actualFree": {
+                    "type": "string"
+                },
+                "buffers": {
+                    "type": "string"
+                },
+                "cached": {
+                    "type": "string"
+                },
+                "comparePercentUsed": {
+                    "type": "string"
+                },
+                "free": {
+                    "type": "string"
+                },
+                "percentUsed": {
+                    "type": "string"
+                },
+                "shared": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "string"
+                },
+                "used": {
+                    "type": "string"
+                }
+            }
+        },
+        "NetworkBandwidth": {
+            "properties": {
+                "device": {
+                    "type": "string"
+                },
+                "rxkBps": {
+                    "type": "string"
+                },
+                "txkBps": {
+                    "type": "string"
+                }
+            }
+        },
+        "NetworkConcurrence": {
+            "properties": {
+                "closed": {
+                    "type": "string"
+                },
+                "estab": {
+                    "type": "string"
+                },
+                "orphaned": {
+                    "type": "string"
+                },
+                "ports": {
+                    "type": "string"
+                },
+                "synrecv": {
+                    "type": "string"
+                },
+                "timewait": {
+                    "type": "string"
+                }
+            }
+        },
+        "Data": {
+            "properties": {
+                "intefaceType": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "object",
+                    "description": "The object type is refer to Cpu, DiskIo, DiskUsage, Memory, NetworkBandwidth, NetworkConcurrence schema"
+                },
+                "errorMsg": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "number"
+                }
+            }
+        }
+    }
+}
