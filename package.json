@@ -1,0 +1,23 @@
+{
+  "name": "edge-instance",
+  "version": "0.0.1",
+  "description": "Health check of edge node",
+  "main": "server.js",
+  "dependencies": {
+    "influx": "^5.0.0-alpha.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git.onlineosd.com/cdn/edge-instance.git"
+  },
+  "keywords": [
+    "cdn",
+    "edge"
+  ],
+  "author": "Mimo tech Co.,Ltd.",
+  "license": "ISC"
+}
