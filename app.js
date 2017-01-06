@@ -1,15 +1,13 @@
 var express = require('express')
 var app = express();
-var Result = require('./model.js');
+var Result = require('./models/health.js');
 
 app.get('/healthcheck/check', function (req, res) {
 
-var result = new Result();
+  var result = new Result();
 
-var output = JSON.stringify(result.query());
-//console.log(result)
-//console.log(result.query());
-    res.json(output);
+  var output = result.query();
+  res.json(output);
 
 });
 
