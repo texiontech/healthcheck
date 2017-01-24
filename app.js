@@ -1,12 +1,16 @@
 var express = require('express')
 var app = express();
-var Result = require('./models/health.js');
+import {Health} from './health';
+const health = new Health();
+
 
 app.get('/healthcheck/check', function (req, res) {
 
-  var result = new Result();
+  let result = new Result();
 
-  var output = result.query();
+  let output = result.query();
+
+  console.log(output[0].data);
   res.json(output);
 
 });
