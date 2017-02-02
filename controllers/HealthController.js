@@ -1,7 +1,7 @@
-var Influx = require('influx');
-var bluebird = require('bluebird');
-var Health = require('../app/models/Health');
-const influx = new Influx.InfluxDB({
+let Influx = require('influx');
+let bluebird = require('bluebird');
+let Health = require('../app/models/Health');
+let influx = new Influx.InfluxDB({
     host: '10.104.240.107',
     port: 8086,
     database: 'varnish'
@@ -17,7 +17,7 @@ module.exports = {
     },
 
     get_status(req, res) {
-        var reqPromiseArray = [];
+        let reqPromiseArray = [];
 
         reqPromiseArray.push(influx.queryRaw('select * from cpu limit 1'));
         reqPromiseArray.push(influx.queryRaw('select * from diskio limit 4'));
@@ -27,12 +27,12 @@ module.exports = {
         reqPromiseArray.push(influx.queryRaw('select * from cpu limit 1'));   //ยังไม่ถูกต้อง
 
         bluebird.all(reqPromiseArray).then(function (reqResultArray) {
-            var data = [];
+            let data = [];
             reqResultArray.forEach(function (result) {
                 data.push(result.results);
             });
 
-            var health = new Health(data);
+            let health = new Health(data);
             res.json(health.getResult());
         });
 
