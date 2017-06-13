@@ -1,7 +1,8 @@
-var express = require('express')
-var expressControllers = require('express-controller');         
-var app = express();
-var router = express.Router();
+const express = require('express')
+const expressControllers = require('express-controller'); 
+const config = require('./configs/config');        
+const app = express();
+const router = express.Router();
 
 app.use(router);
 
@@ -10,6 +11,6 @@ expressControllers
             .setDirectory( __dirname + '/controllers')
             .bind(router);
 
-app.listen(3000, function () {
-  console.log('Example app listening on port 3000!')
+app.listen(config.port.http, function () {
+  console.log('Example app listening on port' + config.port.http);
 });

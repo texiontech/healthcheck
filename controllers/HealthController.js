@@ -1,10 +1,14 @@
-let Influx = require('influx');
-let bluebird = require('bluebird');
-let Health = require('../app/models/Health');
-let influx = new Influx.InfluxDB({
-    host: '10.104.240.107',
-    port: 8086,
-    database: 'varnish'
+const Influx = require('influx');
+const bluebird = require('bluebird');
+const Health = require('../app/models/Health');
+const config = require('../configs/config');
+
+const influx = new Influx.InfluxDB({
+    host: config.InfluxDB.host,
+    port: config.InfluxDB.port,
+    username: config.InfluxDB.username,
+    password: config.InfluxDB.password,
+    database: config.InfluxDB.database
 });
 
 module.exports = {
@@ -19,13 +23,13 @@ module.exports = {
     get_status(req, res) {
         let reqPromiseArray = [];
 
-        reqPromiseArray.push(influx.queryRaw('select * from cpu limit 1'));
-        reqPromiseArray.push(influx.queryRaw('select * from diskio limit 4'));
-        reqPromiseArray.push(influx.queryRaw('select * from disk limit 4'));
-        reqPromiseArray.push(influx.queryRaw('select * from mem limit 1'));
-        reqPromiseArray.push(influx.queryRaw('select * from sysstat_network limit 4'));
-        reqPromiseArray.push(influx.queryRaw('select * from cpu limit 1'));   //ยังไม่ถูกต้อง
-
+        reqPromiseArray.push(influx.queryRaw("SELECT LAST(*) FROM cpu WHERE cpu = 'cpu-total' AND time > now() - 11s ORDER BY time DESC"));
+        reqPromiseArray.push(influx.queryRaw("SELECT * FROM diskio WHERE time > now() - 11s"));
+        reqPromiseArray.push(influx.queryRaw("SELECT LAST(used) AS used FROM disk WHERE time > now() - 30s  GROUP BY path"));
+        reqPromiseArray.push(influx.queryRaw("SELECT LAST(*) FROM mem WHERE time > now() - 11s ORDER BY time DESC"));
+        reqPromiseArray.push(influx.queryRaw("SELECT LAST(bytes_recv) AS bytes_recv, LAST(bytes_sent) AS bytes_sent  FROM net WHERE time > now() - 30s GROUP BY interface"));
+        reqPromiseArray.push(influx.queryRaw("SELECT LAST(*) FROM netstat WHERE time > now() - 11s ORDER BY time DESC"));
+        
         bluebird.all(reqPromiseArray).then(function (reqResultArray) {
             let data = [];
             reqResultArray.forEach(function (result) {
@@ -34,6 +38,8 @@ module.exports = {
 
             let health = new Health(data);
             res.json(health.getResult());
+
+            /*res.json(data)*/
         });
 
     }

@@ -1,6 +1,6 @@
-var DiskUsage = function (device, read, util, write) {
+var DiskUsage = function (device, usage, util, write) {
     this.device = device;
-    this.read = read;
+    this.usage = usage;
     this.util = util;
     this.write = write;
 }
