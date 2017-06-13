@@ -50,7 +50,6 @@ Health.prototype = {
         }
 
         this.results.push(new Data("cpu", serviceCpu, message, timestamp));
-
     },
 
     mapDiskIo() {
@@ -131,16 +130,14 @@ Health.prototype = {
                 let obj = utils.getValueFromColumnName(data, ["bytes_recv", "bytes_sent"]);
 
                 let device = data.tags['interface'];
-                let rxkBps = this.humanFileSize(obj["bytes_recv"]);
-                let txkBps = this.humanFileSize(obj["bytes_sent"]);
+                let rxkBps = obj["bytes_recv"];
+                let txkBps = obj["bytes_sent"];
 
                 nwbandwidth[i] = new NetWorkBandwidth(device, rxkBps, txkBps);
             }
         } catch (error) {
             message = error;
         }
-
-
         this.results.push(new Data("nwbandwidth", nwbandwidth, message, timestamp));
     },
 
@@ -166,12 +163,18 @@ Health.prototype = {
 
         this.results.push(new Data("nwconcurrence", serviceNetworkConcurrence, message, timestamp));
     },
+    toMbps(bps) {
+        let thresh = 1000000;
+        let unit = 'Mbps';
+        let mbps = bps / thresh;
+        return mbps + ' ' + unit; 
+    },
     humanFileSize(bytes, si) {
-        var thresh = si ? 1000 : 1024;
+        let thresh = si ? 1000 : 1024;
         if (Math.abs(bytes) < thresh) {
             return bytes + ' B';
         }
-        var units = si
+        let units = si
             ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
             : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
         var u = -1;
