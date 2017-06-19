@@ -1,15 +1,7 @@
-const Influx = require('influx');
 const bluebird = require('bluebird');
-const Health = require('../app/models/Health');
+const Health = require('../app/models/health');
 const config = require('../configs/config');
-
-const influx = new Influx.InfluxDB({
-    host: config.InfluxDB.host,
-    port: config.InfluxDB.port,
-    username: config.InfluxDB.username,
-    password: config.InfluxDB.password,
-    database: config.InfluxDB.database
-});
+const exec = require('child_process').exec;
 
 module.exports = {
     /*
@@ -21,25 +13,49 @@ module.exports = {
     },
 
     get_status(req, res) {
+        var req_ip = req.headers['x-forwarded-for'] 
+                    || req.headers['x-forward-for'] 
+                    || req.connection.remoteAddress 
+                    || req.socket.remoteAddress 
+                    || req.connection.socket.remoteAddress
+                    || "";
+
+        req['clientIp'] = req_ip;
+        req['timestamp'] = new Date().getTime();
+
         let reqPromiseArray = [];
 
-        reqPromiseArray.push(influx.queryRaw("SELECT LAST(*) FROM cpu WHERE cpu = 'cpu-total' AND time > now() - 11s ORDER BY time DESC"));
-        reqPromiseArray.push(influx.queryRaw("SELECT * FROM diskio WHERE time > now() - 11s"));
-        reqPromiseArray.push(influx.queryRaw("SELECT LAST(used) AS used FROM disk WHERE time > now() - 30s  GROUP BY path"));
-        reqPromiseArray.push(influx.queryRaw("SELECT LAST(*) FROM mem WHERE time > now() - 11s ORDER BY time DESC"));
-        reqPromiseArray.push(influx.queryRaw("SELECT LAST(bytes_recv) AS bytes_recv, LAST(bytes_sent) AS bytes_sent  FROM net WHERE time > now() - 30s GROUP BY interface"));
-        reqPromiseArray.push(influx.queryRaw("SELECT LAST(*) FROM netstat WHERE time > now() - 11s ORDER BY time DESC"));
-        
-        bluebird.all(reqPromiseArray).then(function (reqResultArray) {
-            let data = [];
-            reqResultArray.forEach(function (result) {
-                data.push(result.results);
-            });
+        let cpu = exec('sar -u 1 2 | tail -1 | tail -n +1');
+        let mem = exec('free -m');
+        let diskIo = exec('iostat -xd 1 2 | tail -n +3 | head -n -1 | egrep -v "Device:|^$"');
+        let diskUsed = exec('df -lk | tail -n +2');
+        let networkConcurrence = exec('ss -s | grep ^TCP: | sed "s/[(),/]/ /g"');
+        let networkBandwidth = exec('sar -n DEV 1 2 | grep ^Average: | tail -n +2');
 
-            let health = new Health(data);
-            res.json(health.getResult());
+        let obj = {
+            cpu : cpu,
+            mem : mem,
+            diskIo : diskIo,
+            diskUsed : diskUsed,
+            networkConcurrence : networkConcurrence,
+            networkBandwidth : networkBandwidth
+        }
+    
+        bluebird.props(obj).then(function(result) {
+            let count = 0;
+            let data = {};
 
-            /*res.json(data)*/
+            for(let key in result){
+                result[key].stdout.on('data', function (resp) {
+                    data[key] = resp;
+                    ++count;
+                    if(6 == count){
+                        let health = new Health(data, req);
+                        res.json(health.getResult());
+                    }
+                });
+            }
+            
         });
 
     }

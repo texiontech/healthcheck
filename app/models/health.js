@@ -7,14 +7,18 @@ const Memory = require('./Memory');
 const NetWorkBandwidth = require('./NetWorkBandwidth');
 const NetworkConcurrence = require('./NetworkConcurrence');
 const utils = require('../../utils/util');
+const config = require('../../configs/config');
+const logger = require('../../configs/logger');
+const fs = require('fs');
+const exec = require('child_process').exec;
 
-let Health = function (resouce) {
+let Health = function (resouce, req) {
     this.results = [];
     this.resouce = resouce;
+    this.req = req;
 }
 
 let timestamp = new Date().getTime();
-
 
 Health.prototype = {
 
@@ -25,147 +29,182 @@ Health.prototype = {
         this.mapDiskUsage();
         this.mapMemory();
         this.mapNetWorkBandwidth();
-        this.getNetworkConcurrence();
+        this.getNetworkConcurrence(); 
+
+        let log = "DATE|" + new Date() + "|IP|" + this.req.clientIp + "|RESPONSE|" + JSON.stringify(this.results) + "|RESTIME|" + (new Date().getTime() - this.req.timestamp);
+        logger.info(log);
+
         return this.results;
     },
     mapCpu() {
-        let message = "";
         let serviceCpu;
+        let data_cpu = this.resouce.cpu.trim();
+
         try {
-            let data_cpu = this.resouce[0][0].series[0];
 
-            let obj = utils.getValueFromColumnName(data_cpu, ["last_usage_idle", "last_usage_iowait", "last_usage_nice", "last_usage_steal", "last_usage_system", "last_usage_user"]);
+            var temp = data_cpu.split(/[ \n]+/).filter(function (val) {
+                if (!isNaN(parseFloat(val))) {
+                    return val;
+                }
+            });
 
-            let name = data_cpu.name;
-            let idle = obj["last_usage_idle"];
-            let iowait = obj["last_usage_iowait"];
-            let nice = obj["last_usage_nice"];
-            let steal = obj["last_usage_steal"];
-            let system = obj["last_usage_system"];
-            let user = obj["last_usage_user"];
+            let idle = temp[5];
+            let iowait = temp[3];
+            let nice = temp[1];
+            let steal = temp[4];
+            let system = temp[2];
+            let user = temp[0];
 
             serviceCpu = new Cpu(idle, iowait, nice, steal, system, user);
-        } catch (error) {
-            message = error;
-        }
+            this.results.push(new Data("cpu", serviceCpu, "", timestamp));
 
-        this.results.push(new Data("cpu", serviceCpu, message, timestamp));
+        } catch (error) {
+            console.error(error);
+        }
 
     },
 
     mapDiskIo() {
-
+        let dataDiskio = this.resouce.diskIo.trim();
         let diskio = [];
-        let message = "";
+        try{
+            
+            let tempDiskIo = dataDiskio.split("\n");
+            let indexDiskIo = tempDiskIo.length / 2 - 1;
 
-        try {
-            let dataDiskio = this.resouce[1][0].series[0];
+            for(let i = tempDiskIo.length -1 ; i >= (tempDiskIo.length / 2); i-- ){
+                var temp = tempDiskIo[i].split(/[ ]+/);
 
-            for (let i = 0; i < dataDiskio.values.length; i++) {
-                let obj = utils.getValueFromColumnName(dataDiskio, ["name", "reads", "writes"], i);
+                let names = temp[0];
+                let read = this.bytesToMegabyte(temp[3]);
+                let util = this.bytesToMegabyte(temp[11]);
+                let write = this.bytesToMegabyte(temp[4]);
 
-                let names = obj["name"];
-                let read = this.humanFileSize(obj["reads"]);
-                let util = this.humanFileSize(0);   //ยังไม่ถูกต้อง
-                let write = this.humanFileSize(obj["writes"]);
-
-                diskio[i] = new DiskIo(names, read, util, write);
+                diskio[indexDiskIo--] = new DiskIo(names, read, util, write);
             }
-        } catch (error) {
-            message = error;
-        }
 
-        this.results.push(new Data("diskio", diskio, message, timestamp));
+            this.results.push(new Data("diskio", diskio, "", timestamp));
+
+        }catch(error){
+            console.error(error);
+        }
 
     },
 
     mapDiskUsage() {
-
         let diskUsage = [];
-        let message = "";
         try {
-            let dataDiskUsage = this.resouce[2][0].series;
+            let dataDiskUsage = this.resouce.diskUsed.trim();
 
-            for (let i = 0; i < dataDiskUsage.length; i++) {
-                let data = dataDiskUsage[i];
+            let tempDataDiskUsage = dataDiskUsage.split("\n").filter(function (line) {
+                let temp = line.split(/[ \n]+/);
 
-                let obj = utils.getValueFromColumnName(data, ["used"]);
+                if (temp.length > 1) {
+                    return temp;
+                }
+                
+            });
 
-                let path = data.tags['path'];
-                let usage = this.humanFileSize(obj["used"]);
+            for(let i = 0; i < tempDataDiskUsage.length; i++){
+                let temp = tempDataDiskUsage[i].split(/[ ]+/);
+                
+                let path = temp[5];
+                let usage = temp[4].replace("%", "");
+
                 diskUsage[i] = new DiskUsage(path, usage);
             }
+
+        this.results.push(new Data("diskusage", diskUsage, "", timestamp));
+
         } catch (error) {
-            message = error;
+            console.error(error);
         }
 
-        this.results.push(new Data("diskusage", diskUsage, message, timestamp));
+        
     },
     mapMemory() {
-        let data_memory = this.resouce[3][0].series[0];
+        let data_memory = this.resouce.mem.trim();
 
-        let obj = utils.getValueFromColumnName(data_memory, ["last_buffered", "last_cached", "last_free", "last_available_percent", "last_used_percent", "last_total", "last_used"]);
+        let lines = data_memory.split("\n");
+        let line = lines[1].split(/\s+/);
 
-        let actualFree = this.humanFileSize(obj["last_free"] + obj["last_buffered"] + obj["last_cached"]);
-        let buffers = this.humanFileSize(obj["last_buffered"]);
-        let cached = this.humanFileSize(obj["last_cached"]);
-        let comparePercentUsed = null;   //ยังไม่ถูกต้อง
-        let free = this.humanFileSize(obj["last_free"]);
-        let percentUsed = obj["last_used_percent"];
-        let total = this.humanFileSize(obj["last_total"]);
-        let used = this.humanFileSize(obj["last_used"]);
+        let total = parseInt(line[1], 10);
+        let free = parseInt(line[3], 10);
+        let buffers = parseInt(line[5], 10);
+        let cached = parseInt(line[6], 10);
+        let actualFree = free + buffers + cached;
+        let percentUsed = parseFloat(((1 - (actualFree / total)) * 100).toFixed(2));
+        let used = parseInt(line[2], 10);
 
-        let memory = new Memory(actualFree, buffers, cached, comparePercentUsed, free, percentUsed, total, used)
-
+        let memory = new Memory(actualFree, buffers, cached, free, percentUsed, total, used);
         this.results.push(new Data("memory", memory, "", timestamp));
+
     },
 
     mapNetWorkBandwidth() {
         let nwbandwidth = [];
-        let dataNetworkBandwidth = this.resouce[4][0].series;
-        let message = "";
+        let dataNetworkBandwidth = this.resouce.networkBandwidth.trim();
+
         try {
-            for (let i = 0; i < dataNetworkBandwidth.length; i++) {
-                let data = dataNetworkBandwidth[i];
 
-                let obj = utils.getValueFromColumnName(data, ["bytes_recv", "bytes_sent"]);
+            let tempDataNetworkBandwidth = dataNetworkBandwidth.split("\n");
 
-                let device = data.tags['interface'];
-                let rxkBps = this.humanFileSize(obj["bytes_recv"]);
-                let txkBps = this.humanFileSize(obj["bytes_sent"]);
+            for(let i = 0; i < tempDataNetworkBandwidth.length; i++){
+                let temp = tempDataNetworkBandwidth[i].split(/[ ]+/);
+                let speed = 0;
 
-                nwbandwidth[i] = new NetWorkBandwidth(device, rxkBps, txkBps);
+                let device = temp[1];
+                let rxkBps = this.bytesToMegabits(temp[4]);
+                let txkBps = this.bytesToMegabits(temp[3]);
+
+                try{
+
+                    speed = fs.readFileSync(config.nwBandwidthSpeedPath.replace("{params}", device)).toString().split(/[ \n]+/)[0];
+
+                }catch(error){ 
+                    console.error(error);
+                }
+
+                nwbandwidth[i] = new NetWorkBandwidth(device, rxkBps, txkBps, speed);
+
             }
+
+            this.results.push(new Data("nwbandwidth", nwbandwidth, "", timestamp));
+
         } catch (error) {
-            message = error;
+            console.error(error);
         }
 
 
-        this.results.push(new Data("nwbandwidth", nwbandwidth, message, timestamp));
     },
 
     getNetworkConcurrence() {
         let serviceNetworkConcurrence;
-        let message = "";
 
         try {
-            let nwconcurrence = this.resouce[5][0].series[0];
+            let nwconcurrence = this.resouce.networkConcurrence.trim();
+            let temp = nwconcurrence.split(/[ \n]+/).filter(function (val) {
+                if (!isNaN(parseFloat(val))) {
+                    return val;
+                }
+            });
 
-            let obj = utils.getValueFromColumnName(nwconcurrence, ["last_tcp_close", "last_tcp_established", "last_tcp_syn_recv", "last_tcp_time_wait"]);
-
-            let closed = obj["last_tcp_close"];
-            let estab = obj["last_tcp_established"];
-            let synrecv = obj["last_tcp_syn_recv"];
-            let timewait = obj["last_tcp_time_wait"];
+            let closed = temp[2];
+            let estab = temp[1];
+            let synrecv = temp[4];
+            let timewait = temp[5];
 
             serviceNetworkConcurrence = new NetworkConcurrence(closed, estab, synrecv, timewait);
 
+            this.results.push(new Data("nwconcurrence", serviceNetworkConcurrence, "", timestamp));
+
         } catch (error) {
-            message = error;
+            console.error(error);
         }
 
-        this.results.push(new Data("nwconcurrence", serviceNetworkConcurrence, message, timestamp));
+        
     },
+    
     humanFileSize(bytes, si) {
         var thresh = si ? 1000 : 1024;
         if (Math.abs(bytes) < thresh) {
@@ -180,7 +219,17 @@ Health.prototype = {
             ++u;
         } while (Math.abs(bytes) >= thresh && u < units.length - 1);
         return bytes.toFixed(1) + ' ' + units[u];
+    },
+
+    bytesToMegabyte(bytes) {
+        return (bytes * Math.pow ( 10, -6 )).toFixed(2);
+    }, 
+
+    bytesToMegabits(bytes) {
+        return (bytes * 8 * Math.pow ( 10, -6 )).toFixed(2);
     }
+
+
 }
 
 module.exports = Health;
