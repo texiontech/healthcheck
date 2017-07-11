@@ -1,15 +1,7 @@
 var config = module.exports = {};
 
 config.port = {
-	http: 9000
-};
-
-config.InfluxDB = {
-	host: '10.104.240.107',
-	port: 8086,
-/*	username: 'telegraf',
-    password: 'mflv[', */
-    database: 'varnish'
+	http: 8800
 };
 
 config.nwBandwidthSpeedPath = "/sys/class/net/{params}/speed";
@@ -17,4 +9,4 @@ config.nwBandwidthSpeedPath = "/sys/class/net/{params}/speed";
 config.logs = {};
 config.logs.dir = "/logs";
 config.logs.infoPath = config.logs.dir + "/info.log";
-config.logs.datePattern = "yyyyMMddHHmm.";
+config.logs.datePattern = "yyyyMMddHH.";
