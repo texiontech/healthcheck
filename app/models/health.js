@@ -161,7 +161,7 @@ Health.prototype = {
 
                     let bw = fs.readFileSync(config.nwBandwidthSpeedPath.replace("{params}", device));
                     if (bw != undefined)
-                        speed = this.megabyteToMegabits(bw.toString().split(/[ \n]+/)[0]);
+                        speed = bw.toString().split(/[ \n]+/)[0];
 
                 } catch (error) {
                     console.error(error);
@@ -209,9 +209,6 @@ Health.prototype = {
 
     bytesToMegabyte(bytes) {
         return (bytes * Math.pow(10, -6)).toFixed(4);
-    },
-    megabyteToMegabits(mb) {
-        return (mb / 8).toFixed(6);
     },
     bytesToMegabits(bytes) {
         return (bytes * 8).toFixed(6);
