@@ -1,4 +1,4 @@
-var NetworkBandwidth = function (device, rxkBps, txkBps, speed) {
+let NetworkBandwidth = function (device, rxkBps, txkBps, speed) {
     this.device = device;
     this.rxkBps = rxkBps;
     this.txkBps = txkBps;

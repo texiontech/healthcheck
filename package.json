@@ -12,7 +12,8 @@
     "winston-daily-rotate-file": "^1.4.6"
   },
   "devDependencies": {
-    "chai": "^3.5.0"
+    "chai": "^3.5.0",
+    "forever": "^0.15.3"
   },
   "scripts": {
     "test": "mocha tests --recursive --watch",

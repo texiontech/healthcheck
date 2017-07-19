@@ -1,4 +1,3 @@
-
 const Data = require('./Data');
 const Cpu = require('./Cpu');
 const DiskIo = require('./DiskIo');
@@ -29,12 +28,13 @@ Health.prototype = {
         this.mapDiskUsage();
         this.mapMemory();
         this.mapNetWorkBandwidth();
-        this.getNetworkConcurrence(); 
+        this.getNetworkConcurrence();
 
         let log = "DATE|" + new Date() + "|IP|" + this.req.clientIp + "|RESPONSE|" + JSON.stringify(this.results) + "|RESTIME|" + (new Date().getTime() - this.req.timestamp);
         logger.info(log);
 
         return this.results;
+
     },
     mapCpu() {
         let serviceCpu;
@@ -67,13 +67,13 @@ Health.prototype = {
     mapDiskIo() {
         let dataDiskio = this.resouce.diskIo.trim();
         let diskio = [];
-        try{
-            
+        try {
+
             let tempDiskIo = dataDiskio.split("\n");
             let indexDiskIo = tempDiskIo.length / 2 - 1;
 
-            for(let i = tempDiskIo.length -1 ; i >= (tempDiskIo.length / 2); i-- ){
-                var temp = tempDiskIo[i].split(/[ ]+/);
+            for (let i = tempDiskIo.length - 1; i >= (tempDiskIo.length / 2); i--) {
+                let temp = tempDiskIo[i].split(/[ ]+/);
 
                 let names = temp[0];
                 let read = this.bytesToMegabyte(temp[3]);
@@ -85,7 +85,7 @@ Health.prototype = {
 
             this.results.push(new Data("diskio", diskio, "", timestamp));
 
-        }catch(error){
+        } catch (error) {
             console.error(error);
         }
 
@@ -102,25 +102,25 @@ Health.prototype = {
                 if (temp.length > 1) {
                     return temp;
                 }
-                
+
             });
 
-            for(let i = 0; i < tempDataDiskUsage.length; i++){
+            for (let i = 0; i < tempDataDiskUsage.length; i++) {
                 let temp = tempDataDiskUsage[i].split(/[ ]+/);
-                
+
                 let path = temp[5];
                 let usage = temp[4].replace("%", "");
 
                 diskUsage[i] = new DiskUsage(path, usage);
             }
 
-        this.results.push(new Data("diskusage", diskUsage, "", timestamp));
+            this.results.push(new Data("diskusage", diskUsage, "", timestamp));
 
         } catch (error) {
             console.error(error);
         }
 
-        
+
     },
     mapMemory() {
         let data_memory = this.resouce.mem.trim();
@@ -149,7 +149,7 @@ Health.prototype = {
 
             let tempDataNetworkBandwidth = dataNetworkBandwidth.split("\n");
 
-            for(let i = 0; i < tempDataNetworkBandwidth.length; i++){
+            for (let i = 0; i < tempDataNetworkBandwidth.length; i++) {
                 let temp = tempDataNetworkBandwidth[i].split(/[ ]+/);
                 let speed = 0;
 
@@ -157,11 +157,13 @@ Health.prototype = {
                 let rxkBps = this.bytesToMegabits(temp[4]);
                 let txkBps = this.bytesToMegabits(temp[3]);
 
-                try{
+                try {
 
-                    speed = fs.readFileSync(config.nwBandwidthSpeedPath.replace("{params}", device)).toString().split(/[ \n]+/)[0];
+                    let bw = fs.readFileSync(config.nwBandwidthSpeedPath.replace("{params}", device));
+                    if (bw != undefined)
+                        speed = this.megabyteToMegabits(bw.toString().split(/[ \n]+/)[0]);
 
-                }catch(error){ 
+                } catch (error) {
                     console.error(error);
                 }
 
@@ -202,33 +204,18 @@ Health.prototype = {
             console.error(error);
         }
 
-        
-    },
-    
-    humanFileSize(bytes, si) {
-        var thresh = si ? 1000 : 1024;
-        if (Math.abs(bytes) < thresh) {
-            return bytes + ' B';
-        }
-        var units = si
-            ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-            : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
-        var u = -1;
-        do {
-            bytes /= thresh;
-            ++u;
-        } while (Math.abs(bytes) >= thresh && u < units.length - 1);
-        return bytes.toFixed(1) + ' ' + units[u];
+
     },
 
     bytesToMegabyte(bytes) {
-        return (bytes * Math.pow ( 10, -6 )).toFixed(2);
-    }, 
-
+        return (bytes * Math.pow(10, -6)).toFixed(4);
+    },
+    megabyteToMegabits(mb) {
+        return (mb / 8).toFixed(6);
+    },
     bytesToMegabits(bytes) {
-        return (bytes * 8 * Math.pow ( 10, -6 )).toFixed(2);
+        return (bytes * 8).toFixed(6);
     }
-
 
 }
 

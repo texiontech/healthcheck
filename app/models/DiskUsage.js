@@ -1,4 +1,4 @@
-var DiskUsage = function (device, usage, util, write) {
+let DiskUsage = function (device, usage, util, write) {
     this.device = device;
     this.usage = usage;
     this.util = util;
