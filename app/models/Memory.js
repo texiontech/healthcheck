@@ -1,8 +1,7 @@
-var Memory = function (actualFree, buffers, cached, comparePercentUsed, free, percentUsed, total, used) {
+let Memory = function (actualFree, buffers, cached, free, percentUsed, total, used) {
     this.actualFree = actualFree;
     this.buffers = buffers;
     this.cached = cached;
-    this.comparePercentUsed = comparePercentUsed;
     this.free = free;
     this.percentUsed = percentUsed;
     this.total = total;

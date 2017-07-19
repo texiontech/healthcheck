@@ -16,7 +16,7 @@ export class Resource {
         let diskIo = [];
         let diskNames = ["sda", "sdb"];
 
-        for (var i = 0; i < diskNames.length; i++) {
+        for (let i = 0; i < diskNames.length; i++) {
             diskIo[i] = new DiskIo(diskNames[i], 0.00, 0.00, 0.00);
         }
 
@@ -29,8 +29,8 @@ export class Resource {
 
     getNetworkBandwidth() {
         let nwBandwidth = [];
-        var devices = ["eth0", "lo"];
-        for (var i = 0; i < devices.length; i++) {
+        let devices = ["eth0", "lo"];
+        for (let i = 0; i < devices.length; i++) {
             nwBandwidth[i] = new NetWorkBandwidth(devices[i], "0.39", "0.35");
         }
         return nwBandwidth;

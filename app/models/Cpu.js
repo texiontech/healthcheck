@@ -1,5 +1,5 @@
 
-var Cpu = function (idle, iowait, nice, steal, system, user) {
+let Cpu = function (idle, iowait, nice, steal, system, user) {
     this.idle = idle;
     this.iowait = iowait;
     this.nice = nice;
