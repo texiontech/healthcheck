@@ -7,6 +7,6 @@ config.port = {
 config.nwBandwidthSpeedPath = "/sys/class/net/{params}/speed";
 
 config.logs = {};
-config.logs.dir = "/logs";
-config.logs.infoPath = config.logs.dir + "/info.log";
+config.logs.dir = "logs";
+config.logs.infoPath = "info.log";
 config.logs.datePattern = "yyyyMMddHH.";
