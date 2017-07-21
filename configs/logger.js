@@ -5,7 +5,7 @@ const config = require('./config');
 
 let transport = new winston.transports.DailyRotateFile({
 	datePattern: config.logs.datePattern,
-	filename: path.join(path.resolve(config.logs.dir), config.logs.infoPath),
+	filename: path.resolve(path.join(path.resolve(config.logs.dir), config.logs.infoPath)),
 	level: 'info',
 	timestamp: false,
 	prepend: true,
