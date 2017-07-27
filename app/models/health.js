@@ -169,7 +169,7 @@ Health.prototype = {
                         console.error(error);
                     }
 
-                    nwbandwidth[i] = new NetWorkBandwidth(device, rxkBps, txkBps, speed);
+                    nwbandwidth.push(NetWorkBandwidth(device, rxkBps, txkBps, speed));
                 }
 
             }
