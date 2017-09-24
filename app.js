@@ -5,8 +5,8 @@ const fs = require('fs')
 const app = express();
 const router = express.Router();
 
-if (!fs.existsSync("." + config.logs.dir)) {
-	fs.mkdirSync("." + config.logs.dir);
+if (!fs.existsSync(config.logs.dir)) {
+	fs.mkdirSync(config.logs.dir);
 }
 
 app.use(router);
