@@ -150,24 +150,27 @@ Health.prototype = {
             let tempDataNetworkBandwidth = dataNetworkBandwidth.split("\n");
 
             for (let i = 0; i < tempDataNetworkBandwidth.length; i++) {
+
                 let temp = tempDataNetworkBandwidth[i].split(/[ ]+/);
                 let speed = 0;
 
                 let device = temp[1];
-                let rxkBps = this.bytesToMegabits(temp[4]);
-                let txkBps = this.bytesToMegabits(temp[3]);
 
-                try {
+                if (device != "lo") {
+                    let rxkBps = this.bytesToMegabits(temp[4]);
+                    let txkBps = this.bytesToMegabits(temp[3]);
 
-                    let bw = fs.readFileSync(config.nwBandwidthSpeedPath.replace("{params}", device));
-                    if (bw != undefined)
-                        speed = this.megabyteToMegabits(bw.toString().split(/[ \n]+/)[0]);
+                    try {
 
-                } catch (error) {
-                    console.error(error);
+                        let bw = fs.readFileSync(config.nwBandwidthSpeedPath.replace("{params}", device));
+                        speed = bw != undefined ? bw.toString().split(/[ \n]+/)[0] : 0;
+
+                    } catch (error) {
+                        console.error(error);
+                    }
+
+                    nwbandwidth.push(NetWorkBandwidth(device, rxkBps, txkBps, speed));
                 }
-
-                nwbandwidth[i] = new NetWorkBandwidth(device, rxkBps, txkBps, speed);
 
             }
 
@@ -176,8 +179,6 @@ Health.prototype = {
         } catch (error) {
             console.error(error);
         }
-
-
     },
 
     getNetworkConcurrence() {
@@ -203,15 +204,10 @@ Health.prototype = {
         } catch (error) {
             console.error(error);
         }
-
-
     },
 
     bytesToMegabyte(bytes) {
         return (bytes * Math.pow(10, -6)).toFixed(4);
-    },
-    megabyteToMegabits(mb) {
-        return (mb / 8).toFixed(6);
     },
     bytesToMegabits(bytes) {
         return (bytes * 8).toFixed(6);
